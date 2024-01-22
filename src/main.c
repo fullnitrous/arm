@@ -29,12 +29,12 @@
 void update_camera(Camera *camera) {
 	Vector2 mouse_delta = GetMouseDelta();
 
-	if (IsKeyDown(KEY_J)) { CameraPitch(camera, -CAMERA_ROTATION_SPEED, 0, 0, 0); }
-	if (IsKeyDown(KEY_K)) { CameraPitch(camera, CAMERA_ROTATION_SPEED, 0, 0, 0); }
-	if (IsKeyDown(KEY_L)) { CameraYaw(camera, -CAMERA_ROTATION_SPEED, 0); }
-	if (IsKeyDown(KEY_H)) { CameraYaw(camera, CAMERA_ROTATION_SPEED, 0); }
-	if (IsKeyDown(KEY_Q)) { CameraRoll(camera, -CAMERA_ROTATION_SPEED); }
-	if (IsKeyDown(KEY_E)) { CameraRoll(camera, CAMERA_ROTATION_SPEED); }
+	if(IsKeyDown(KEY_J)) { CameraPitch(camera, -CAMERA_ROTATION_SPEED, 0, 0, 0); }
+	if(IsKeyDown(KEY_K)) { CameraPitch(camera, CAMERA_ROTATION_SPEED, 0, 0, 0); }
+	if(IsKeyDown(KEY_L)) { CameraYaw(camera, -CAMERA_ROTATION_SPEED, 0); }
+	if(IsKeyDown(KEY_H)) { CameraYaw(camera, CAMERA_ROTATION_SPEED, 0); }
+	if(IsKeyDown(KEY_Q)) { CameraRoll(camera, -CAMERA_ROTATION_SPEED); }
+	if(IsKeyDown(KEY_E)) { CameraRoll(camera, CAMERA_ROTATION_SPEED); }
 
 	if(IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
 		const Vector2 mouseDelta = GetMouseDelta();
@@ -51,8 +51,8 @@ void update_camera(Camera *camera) {
 	if(IsKeyDown(KEY_A)) { CameraMoveRight(camera, -CAMERA_MOVE_SPEED, 0); }
 	if(IsKeyDown(KEY_S)) { CameraMoveForward(camera, -CAMERA_MOVE_SPEED, 0); }
 	if(IsKeyDown(KEY_D)) { CameraMoveRight(camera, CAMERA_MOVE_SPEED, 0); }
-	if (IsKeyDown(KEY_SPACE)) { CameraMoveUp(camera, CAMERA_MOVE_SPEED); }
-	if (IsKeyDown(KEY_LEFT_CONTROL)) { CameraMoveUp(camera, -CAMERA_MOVE_SPEED); }
+	if(IsKeyDown(KEY_SPACE)) { CameraMoveUp(camera, CAMERA_MOVE_SPEED); }
+	if(IsKeyDown(KEY_LEFT_CONTROL)) { CameraMoveUp(camera, -CAMERA_MOVE_SPEED); }
 
 	CameraMoveToTarget(camera, -GetMouseWheelMove());
 
