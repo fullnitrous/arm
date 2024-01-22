@@ -6,15 +6,15 @@
 #define _OPW_KINEMATICS_H_
 
 typedef struct opw_arm_parameters {
-    double c1, c2, c3, c4; 
-    double a1, a2; 
-    double b;
+	double c1, c2, c3, c4; 
+	double a1, a2; 
+	double b;
 } opw_t;
 
 typedef struct rot_matrix {
-    double r11, r12, r13;
-    double r21, r22, r23;
-    double r31, r32, r33;
+	double r11, r12, r13;
+	double r21, r22, r23;
+	double r31, r32, r33;
 } rotm_t;
 
 typedef struct denavit_hartenberg {

@@ -2,7 +2,7 @@
 
 void __matmul4x4fast(double a[16], double b[16], double out[16]) {
 	int r, c, i;
-	
+
 	for(r = 0; r < 4; r++) {
 		for(c = 0; c < 4; c++) {
 			out[4*r+c] = 0;
@@ -11,7 +11,7 @@ void __matmul4x4fast(double a[16], double b[16], double out[16]) {
 			}
 		}
 	}
-	
+
 	return;
 }
 
@@ -43,33 +43,33 @@ rotm_t opw_euler(double roll, double pitch, double yaw) {
 void opw_dh_transform(dh_t dh, double* m) {
 	double sin_theta, cos_theta;
 	double sin_alpha, cos_alpha;
-	
+
 	sin_theta = sin(dh.theta);
 	cos_theta = cos(dh.theta);
 	sin_alpha = sin(dh.alpha);
 	cos_alpha = cos(dh.alpha); 
 
-    m[0] = cos_theta;
+	m[0] = cos_theta;
 	m[1] = -sin_theta*cos_alpha;
 	m[2] = sin_theta*sin_alpha;
 	m[3] = dh.a*cos_theta;
-    
+
 	m[4] = sin_theta;
 	m[5] = cos_theta*cos_alpha;
 	m[6] = -cos_theta*sin_alpha;
 	m[7] = dh.a*sin_theta;
 
-    m[8]  = 0;
+	m[8]  = 0;
 	m[9]  = sin_alpha;
 	m[10] = cos_alpha;
 	m[11] = dh.d;
-    
+
 	m[12] = 0;
 	m[13] = 0;
 	m[14] = 0;
 	m[15] = 1;
 
-    return;
+	return;
 }
 
 kinstate_t opw_kinstate(opw_t params) {
@@ -80,26 +80,26 @@ kinstate_t opw_kinstate(opw_t params) {
 	state.linkage[0].a     = params.a1;
 	state.linkage[0].alpha = -M_PI/2;
 
-    state.linkage[1].theta = 0;
+	state.linkage[1].theta = 0;
 	state.linkage[1].d     = params.b;
 	state.linkage[1].a     = params.c2;
 	state.linkage[1].alpha = 0;
 
-    state.linkage[2].theta = 0;
+	state.linkage[2].theta = 0;
 	state.linkage[2].d     = 0;
 	state.linkage[2].a     = -params.a2;
 	state.linkage[2].alpha = -M_PI/2;
 
-    state.linkage[3].theta = 0;
+	state.linkage[3].theta = 0;
 	state.linkage[3].d     = params.c3;
 	state.linkage[3].a     = 0;
 	state.linkage[3].alpha = M_PI/2;
 
-    state.linkage[4].theta = 0;
+	state.linkage[4].theta = 0;
 	state.linkage[4].d     = 0;
 	state.linkage[4].a     = 0;
 	state.linkage[4].alpha = -M_PI/2;
-	
+
 	state.linkage[5].theta = 0;
 	state.linkage[5].d     = params.c4;
 	state.linkage[5].a     = 0;
@@ -124,13 +124,13 @@ void opw_forward(kinstate_t state, double frames[6*4*4]) {
 	double transform_mat[16];
 
 	opw_dh_transform(state.linkage[0], frames);
-	
+
 	for(i = 1; i < 6; i++) {
 		opw_dh_transform(state.linkage[i], transform_mat);
 		__matmul4x4fast(frames+16*(i-1), transform_mat, frames+16*i);
 	}
 
-    return;
+	return;
 }
 
 #define c1 (param.c1)
@@ -194,10 +194,10 @@ void opw_inverse(opw_t param, vec3_t pos, rotm_t rot, double sols[6*8]) {
 	s1     = sqrt(s1_sqr);
 	s2     = sqrt(s2_sqr);
 	k      = sqrt(k_sqr);
-	
+
 	tmp1 = atan2(cy0, cx0);
 	tmp2 = atan2(b, nx1 + a1);
-	
+
 	theta1_i  = tmp1 - tmp2;
 	theta1_ii = tmp1 + tmp2 - M_PI;
 

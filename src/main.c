@@ -18,14 +18,14 @@ Camera3D setup_raylib(void) {
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 	InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "arm");
-	
+
 	Camera3D camera   = {0};
 	camera.position   = (Vector3){10, 10, 10};
 	camera.target     = (Vector3){0, 0, 0};
 	camera.up         = (Vector3){0, 0, 1};
 	camera.projection = CAMERA_PERSPECTIVE;
 	camera.fovy       = 45.0;
-	
+
 	SetTargetFPS(60);
 
 	return camera;
@@ -68,8 +68,8 @@ void draw_arm_joint(double angle) {
 		DrawLine3D((Vector3){p1.x, p1.y, p1.z}, (Vector3){p2.x, p2.y, p2.z}, COL_BLUE);
 	}
 	rlPushMatrix();
-		rlRotatef(degrees(angle), 0.0, 1.0, 0.0);
-		DrawLine3D((Vector3){0, -0.3, 0}, (Vector3){0.3, -0.3, 0}, COL_BLUE);
+	rlRotatef(degrees(angle), 0.0, 1.0, 0.0);
+	DrawLine3D((Vector3){0, -0.3, 0}, (Vector3){0.3, -0.3, 0}, COL_BLUE);
 	rlPopMatrix();
 	return;
 }
@@ -78,28 +78,28 @@ void draw_arm(kinstate_t* state, double* frames) {
 	float t1[16], t2[16];
 
 	rlPushMatrix();
+	rlPushMatrix();
+	rlRotatef(degrees(state->linkage[0].theta), 0.0, 0.0, 1.0);
+	rlRotatef(90, 1.0, 0.0, 0.0);
+	draw_arm_joint(-state->linkage[0].theta);
+	rlPopMatrix();
+	raylib_matrix(frames, t2);
+	DrawLine3D((Vector3){0,0,0}, (Vector3){t2[12], t2[13], t2[14]}, COL_GRAY);
+	for(int i = 0; i < 5; i++) {
 		rlPushMatrix();
-			rlRotatef(degrees(state->linkage[0].theta), 0.0, 0.0, 1.0);
-			rlRotatef(90, 1.0, 0.0, 0.0);
-			draw_arm_joint(-state->linkage[0].theta);
+		raylib_matrix(frames+16*i, t1);
+		rlMultMatrixf(t1);
+		rlPushMatrix();
+		rlRotatef(degrees(state->linkage[i+1].theta), 0.0, 0.0, 1.0);
+		rlRotatef(90, 1.0, 0.0, 0.0);
+		draw_arm_joint(-state->linkage[i+1].theta);
 		rlPopMatrix();
-		raylib_matrix(frames, t2);
-		DrawLine3D((Vector3){0,0,0}, (Vector3){t2[12], t2[13], t2[14]}, COL_GRAY);
-		for(int i = 0; i < 5; i++) {
-			rlPushMatrix();
-				raylib_matrix(frames+16*i, t1);
-				rlMultMatrixf(t1);
-				rlPushMatrix();
-					rlRotatef(degrees(state->linkage[i+1].theta), 0.0, 0.0, 1.0);
-					rlRotatef(90, 1.0, 0.0, 0.0);
-					draw_arm_joint(-state->linkage[i+1].theta);
-				rlPopMatrix();
-			rlPopMatrix();
-			raylib_matrix(frames+16*(i+1), t2);
-			DrawLine3D((Vector3){t1[12], t1[13], t1[14]}, (Vector3){t2[12], t2[13], t2[14]}, COL_GRAY);
-		}
+		rlPopMatrix();
+		raylib_matrix(frames+16*(i+1), t2);
+		DrawLine3D((Vector3){t1[12], t1[13], t1[14]}, (Vector3){t2[12], t2[13], t2[14]}, COL_GRAY);
+	}
 	rlPopMatrix();	
-		
+
 	return;
 }
 
@@ -123,7 +123,7 @@ void draw_path() {
 
 int main(void) {
 	Camera3D camera = setup_raylib();	
-	
+
 	double sols[6*8];	
 	double frames[6*4*4];
 	int sol = 0;
@@ -148,7 +148,7 @@ int main(void) {
 		ClearBackground(BLACK);
 		UpdateCamera(&camera, CAMERA_FREE);
 		BeginMode3D(camera);
-			
+
 		draw_axes();
 
 		KeyboardKey key = GetKeyPressed();
@@ -163,7 +163,7 @@ int main(void) {
 			case KEY_EIGHT: sol = 7; break;
 			default: break;
 		}
-	
+
 		/* main logic */	
 		target_pos = position_function(t);
 		target_rot = orientation_function(t);	
@@ -177,8 +177,8 @@ int main(void) {
 		EndMode3D();
 		EndDrawing();
 	}
-	
+
 	CloseWindow();
-	
+
 	return 0;
 }
