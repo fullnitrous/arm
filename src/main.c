@@ -7,6 +7,8 @@
 #include <raymath.h>
 #include <rcamera.h>
 #include <rlgl.h>
+#include <imgui.h>
+#include <rlImGui.h>
 
 #include "opw.h"
 
@@ -26,38 +28,41 @@
 #define CAMERA_MOUSE_SCROLL_SENSITIVITY 1.5
 #define CAMERA_ORBITAL_SPEED 0.5
 
-void update_camera(Camera *camera) {
+void update_camera(Camera *camera, int disable_keys, int disable_mouse) {
 	Vector2 mouse_delta = GetMouseDelta();
-
-	if(IsKeyDown(KEY_J)) { CameraPitch(camera, -CAMERA_ROTATION_SPEED, 0, 0, 0); }
-	if(IsKeyDown(KEY_K)) { CameraPitch(camera, CAMERA_ROTATION_SPEED, 0, 0, 0); }
-	if(IsKeyDown(KEY_L)) { CameraYaw(camera, -CAMERA_ROTATION_SPEED, 0); }
-	if(IsKeyDown(KEY_H)) { CameraYaw(camera, CAMERA_ROTATION_SPEED, 0); }
-	if(IsKeyDown(KEY_Q)) { CameraRoll(camera, -CAMERA_ROTATION_SPEED); }
-	if(IsKeyDown(KEY_E)) { CameraRoll(camera, CAMERA_ROTATION_SPEED); }
-
-	if(IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-		const Vector2 mouseDelta = GetMouseDelta();
-		if(mouseDelta.x > 0.0f) { CameraMoveRight(camera, CAMERA_PAN_SPEED, 0); }
-		if(mouseDelta.x < 0.0f) { CameraMoveRight(camera, -CAMERA_PAN_SPEED, 0); }
-		if(mouseDelta.y > 0.0f) { CameraMoveUp(camera, -CAMERA_PAN_SPEED); }
-		if(mouseDelta.y < 0.0f) { CameraMoveUp(camera, CAMERA_PAN_SPEED); }
-	} else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-		CameraYaw(camera, -mouse_delta.x*CAMERA_MOUSE_MOVE_SENSITIVITY, 0);
-		CameraPitch(camera, -mouse_delta.y*CAMERA_MOUSE_MOVE_SENSITIVITY, 0, 0, 0);
+	
+	if(!disable_keys) {
+		if(IsKeyDown(KEY_J)) { CameraPitch(camera, -CAMERA_ROTATION_SPEED, 0, 0, 0); }
+		if(IsKeyDown(KEY_K)) { CameraPitch(camera, CAMERA_ROTATION_SPEED, 0, 0, 0); }
+		if(IsKeyDown(KEY_L)) { CameraYaw(camera, -CAMERA_ROTATION_SPEED, 0); }
+		if(IsKeyDown(KEY_H)) { CameraYaw(camera, CAMERA_ROTATION_SPEED, 0); }
+		if(IsKeyDown(KEY_Q)) { CameraRoll(camera, -CAMERA_ROTATION_SPEED); }
+		if(IsKeyDown(KEY_E)) { CameraRoll(camera, CAMERA_ROTATION_SPEED); }
+		if(IsKeyDown(KEY_W)) { CameraMoveForward(camera, CAMERA_MOVE_SPEED, 0); }
+		if(IsKeyDown(KEY_A)) { CameraMoveRight(camera, -CAMERA_MOVE_SPEED, 0); }
+		if(IsKeyDown(KEY_S)) { CameraMoveForward(camera, -CAMERA_MOVE_SPEED, 0); }
+		if(IsKeyDown(KEY_D)) { CameraMoveRight(camera, CAMERA_MOVE_SPEED, 0); }
+		if(IsKeyDown(KEY_SPACE)) { CameraMoveUp(camera, CAMERA_MOVE_SPEED); }
+		if(IsKeyDown(KEY_LEFT_CONTROL)) { CameraMoveUp(camera, -CAMERA_MOVE_SPEED); }
+		if(IsKeyPressed(KEY_KP_SUBTRACT)) { CameraMoveToTarget(camera, 2.0f); }
+		if(IsKeyPressed(KEY_KP_ADD)) { CameraMoveToTarget(camera, -2.0f); }
 	}
-
-	if(IsKeyDown(KEY_W)) { CameraMoveForward(camera, CAMERA_MOVE_SPEED, 0); }
-	if(IsKeyDown(KEY_A)) { CameraMoveRight(camera, -CAMERA_MOVE_SPEED, 0); }
-	if(IsKeyDown(KEY_S)) { CameraMoveForward(camera, -CAMERA_MOVE_SPEED, 0); }
-	if(IsKeyDown(KEY_D)) { CameraMoveRight(camera, CAMERA_MOVE_SPEED, 0); }
-	if(IsKeyDown(KEY_SPACE)) { CameraMoveUp(camera, CAMERA_MOVE_SPEED); }
-	if(IsKeyDown(KEY_LEFT_CONTROL)) { CameraMoveUp(camera, -CAMERA_MOVE_SPEED); }
-
-	CameraMoveToTarget(camera, -GetMouseWheelMove());
-
-	if(IsKeyPressed(KEY_KP_SUBTRACT)) { CameraMoveToTarget(camera, 2.0f); }
-	if(IsKeyPressed(KEY_KP_ADD)) { CameraMoveToTarget(camera, -2.0f); }
+	
+	if(!disable_mouse) {
+		if(IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+			const Vector2 mouseDelta = GetMouseDelta();
+			if(mouseDelta.x > 0.0f) { CameraMoveRight(camera, CAMERA_PAN_SPEED, 0); }
+			if(mouseDelta.x < 0.0f) { CameraMoveRight(camera, -CAMERA_PAN_SPEED, 0); }
+			if(mouseDelta.y > 0.0f) { CameraMoveUp(camera, -CAMERA_PAN_SPEED); }
+			if(mouseDelta.y < 0.0f) { CameraMoveUp(camera, CAMERA_PAN_SPEED); }
+		} else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+			CameraYaw(camera, -mouse_delta.x*CAMERA_MOUSE_MOVE_SENSITIVITY, 0);
+			CameraPitch(camera, -mouse_delta.y*CAMERA_MOUSE_MOVE_SENSITIVITY, 0, 0, 0);
+		}
+		CameraMoveToTarget(camera, -GetMouseWheelMove());
+	}
+	
+	return;
 }
 
 Camera3D setup_raylib(void) {
@@ -74,11 +79,23 @@ Camera3D setup_raylib(void) {
 
 	SetTargetFPS(60);
 
+    rlImGuiBeginInitImGui();
+    ImGui::StyleColorsDark();
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontFromFileTTF("font.ttf", 18);
+
+    rlImGuiEndInitImGui();
+
 	return camera;
 }
 
+Vector3 from_vec3t(vec3_t v) {
+	return (Vector3){(float)v.x, (float)v.y, (float)v.z};
+}
+
 void draw_axes(void) {
-	double l = 2;
+	float l = 2;
 	Vector3 origin = {0, 0, 0};
 	Vector3 x_axis = {l, 0, 0};
 	Vector3 y_axis = {0, l, 0};
@@ -111,7 +128,7 @@ void draw_arm_joint(double angle) {
 		double a2 = -((i+1)/20.0)*angle;
 		vec3_t p1 = (vec3_t){r*cos(a1), -0.3, r*sin(a1)};
 		vec3_t p2 = (vec3_t){r*cos(a2), -0.3, r*sin(a2)};
-		DrawLine3D((Vector3){p1.x, p1.y, p1.z}, (Vector3){p2.x, p2.y, p2.z}, COL_BLUE);
+		DrawLine3D(from_vec3t(p1), from_vec3t(p2), COL_BLUE);
 	}
 	rlPushMatrix();
 	rlRotatef(degrees(angle), 0.0, 1.0, 0.0);
@@ -163,7 +180,7 @@ void draw_path() {
 		double t1 = ((i+1)/200.0)*(1/3.0)*2*M_PI;
 		vec3_t p0 = position_function(t0);
 		vec3_t p1 = position_function(t1);
-		DrawLine3D((Vector3){p0.x, p0.y, p0.z}, (Vector3){p1.x, p1.y, p1.z}, COL_GRAY);
+		DrawLine3D(from_vec3t(p0), from_vec3t(p1), COL_GRAY);
 	}
 }
 
@@ -185,6 +202,8 @@ int main(void) {
 	vec3_t target_pos;
 	rotm_t target_rot;
 
+	ImGuiIO& io = ImGui::GetIO();
+
 	double t = 0;
 
 	while(!WindowShouldClose()) {
@@ -192,12 +211,12 @@ int main(void) {
 
 		BeginDrawing();
 		ClearBackground(BLACK);
-		update_camera(&camera);
+		update_camera(&camera, io.WantCaptureKeyboard, io.WantCaptureMouse);
 		BeginMode3D(camera);
 
 		draw_axes();
 
-		KeyboardKey key = GetKeyPressed();
+		KeyboardKey key = (KeyboardKey)GetKeyPressed();
 		switch(key) {
 			case KEY_ONE: sol = 0; break;
 			case KEY_TWO: sol = 1; break;
@@ -221,6 +240,12 @@ int main(void) {
 		/* main logic */
 
 		EndMode3D();
+			
+		rlImGuiBegin();	
+		bool open = true;
+		ImGui::ShowDemoWindow(&open);
+		rlImGuiEnd();
+
 		EndDrawing();
 	}
 
