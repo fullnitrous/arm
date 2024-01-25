@@ -1,3 +1,3 @@
 # Arm
 
-More information available at [fullnitrous.com/tag/robotics](https://fullnitrous.com/tag/robotics).
+More information available at [fullnitrous.com/tag/robotics](https://fullnitrous.com/).
