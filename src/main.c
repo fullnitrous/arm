@@ -10,7 +10,7 @@
 #include <imgui.h>
 #include <rlImGui.h>
 
-#include "opw.h"
+#include "core/opw.h"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720

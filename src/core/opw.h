@@ -1,9 +1,13 @@
-#include <math.h>
 #include <stdio.h>
 #include "vector.h"
+#include "misc.h"
 
 #ifndef _OPW_KINEMATICS_H_
 #define _OPW_KINEMATICS_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct opw_arm_parameters {
 	double c1, c2, c3, c4; 
@@ -33,5 +37,8 @@ void opw_update_kinstate(kinstate_t* kinstate, double* theta);
 void opw_forward(kinstate_t state, double frames[6*4*4]);
 void opw_inverse(opw_t params, vec3_t pos, rotm_t rot, double sols[6*8]);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
