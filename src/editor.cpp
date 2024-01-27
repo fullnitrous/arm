@@ -84,8 +84,10 @@ Camera3D setup_raylib(void) {
     rlImGuiBeginInitImGui();
     ImGui::StyleColorsDark();
 
+	/*
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF("font.ttf", 18);
+	*/
 
     rlImGuiEndInitImGui();
 
@@ -168,9 +170,19 @@ void draw_arm(kinstate_t* state, double* frames) {
 	return;
 }
 
-vec3_t position_function(ppoly_t ppoly, double t) {
+vec3_t position_function1(ppoly_t ppoly, double t) {
+	return eval_ppoly1(&ppoly, t).p;
+}
+
+vec3_t position_function3(ppoly_t ppoly, double t) {
 	return eval_ppoly3(&ppoly, t).p;
 }
+
+vec3_t position_function5(ppoly_t ppoly, double t) {
+	return eval_ppoly5(&ppoly, t).p;
+}
+
+vec3_t (*position_function)(ppoly_t, double) = &position_function3;
 
 rotm_t orientation_function(double t) {
 	return opw_euler(0, M_PI, 0);
@@ -180,9 +192,9 @@ void draw_path(ppoly_t ppoly) {
 	for(int i = 1; i < 200; i++) {
 		double t0 = range(0, 1, i-1, 200);
 		double t1 = range(0, 1, i, 200);
-		eval_t e0 = eval_ppoly3(&ppoly, t0);
-		eval_t e1 = eval_ppoly3(&ppoly, t1);
-		DrawLine3D(from_vec3t(e0.p), from_vec3t(e1.p), COL_GRAY);
+		vec3_t p0 = position_function(ppoly, t0);
+		vec3_t p1 = position_function(ppoly, t1);
+		DrawLine3D(from_vec3t(p0), from_vec3t(p1), COL_GRAY);
 	}
 }
 
@@ -234,11 +246,20 @@ int main(void) {
 	double matrix3_mem[EVAL_PPOLY3_EQSYS_MEMSIZE(5)];
 	double b3_mem[EVAL_PPOLY3_B_MEMSIZE(5)];
 
-	luctx_t ctx3 = eval_ppoly_luctx_init(pivot3_mem, matrix3_mem, b3_mem);
+	vec3_t quintic_mem0[EVAL_PPOLY5_MEMSIZE(5)];
+    double quintic_mem1[5];
+    ppoly_t quintic_ = eval_ppoly_init(quintic_mem0, quintic_mem1, 5);
+    int pivot5_mem[EVAL_PPOLY5_PIVOT_MEMSIZE(5)];
+    double matrix5_mem[EVAL_PPOLY5_EQSYS_MEMSIZE(5)];
+    double b5_mem[EVAL_PPOLY5_B_MEMSIZE(5)];
 
-	int retval = intrpl_ppoly3(points, 5, NULL, NULL, &ctx3, &cubic_); 
-	
-	printf("pwp3 status: %d\n", retval);
+    luctx_t ctx3 = eval_ppoly_luctx_init(pivot3_mem, matrix3_mem, b3_mem);
+    luctx_t ctx5 = eval_ppoly_luctx_init(pivot5_mem, matrix5_mem, b5_mem);
+
+	intrpl_ppoly3(points, 5, NULL, NULL, &ctx3, &cubic_); 
+	intrpl_ppoly5(points, 5, NULL, NULL, NULL, NULL, &ctx5, &quintic_); 
+
+	ppoly_t active = cubic_;
 
 	/* testing */
 	
@@ -262,21 +283,16 @@ int main(void) {
 
 		KeyboardKey key = (KeyboardKey)GetKeyPressed();
 		switch(key) {
-			case KEY_ONE: sol = 0; break;
-			case KEY_TWO: sol = 1; break;
-			case KEY_THREE: sol = 2; break;
-			case KEY_FOUR: sol = 3; break;
-			case KEY_FIVE: sol = 4; break;
-			case KEY_SIX: sol = 5; break;
-			case KEY_SEVEN: sol = 6; break;
-			case KEY_EIGHT: sol = 7; break;
+			case KEY_ONE:   active = linear_; position_function = &position_function1; break;
+			case KEY_TWO:   active = cubic_; position_function = &position_function3; break;
+			case KEY_THREE: active = quintic_; position_function = &position_function5; break;
 			default: break;
 		}
 
 		/* main logic */	
-		target_pos = position_function(cubic_, t);
+		target_pos = position_function(active, t);
 		target_rot = orientation_function(t);	
-		draw_path(cubic_);
+		draw_path(active);
 		opw_inverse(arm, target_pos, target_rot, sols);	
 		opw_forward(state, frames);
 		opw_update_kinstate(&state, sols + 6*sol);

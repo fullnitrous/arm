@@ -43,7 +43,7 @@ int intrpl_ppoly1(vec3_t* p, int n, ppoly_t* ppoly) {
 	return 1;
 }
 
-int intrpl_spline_eqsys(double* matrix, double* u, int d, int n) {
+int intrpl_spline_eqsys(double* u, int d, int n, double* matrix) {
 	int uk, sz, k, i, j, z, q, derivs;
 	int deriv, coeff, lhs0, lhs1, lhs, rhs;
 	double t, e;
@@ -127,7 +127,7 @@ int intrpl_ppoly3(vec3_t* p, int n, vec3_t* v0, vec3_t* v1, luctx_t* ctx, ppoly_
 
 	intrpl_parameterize(p, n, u);
 
-	sz = intrpl_spline_eqsys(ctx->m, u, 3, n);
+	sz = intrpl_spline_eqsys(u, 3, n, ctx->m);
 	ctx->n = sz;
 	
 	if(v0 == NULL) {
@@ -181,7 +181,7 @@ int intrpl_ppoly5(vec3_t* p, int n, vec3_t* v0, vec3_t* v1, vec3_t* a0, vec3_t* 
 
 	intrpl_parameterize(p, n, u);
 
-	sz = intrpl_spline_eqsys(ctx->m, u, 5, n);
+	sz = intrpl_spline_eqsys(u, 5, n, ctx->m);
 	ctx->n = sz;
 
 	if(v0 == NULL) {

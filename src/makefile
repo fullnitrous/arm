@@ -1,5 +1,6 @@
 cc = gcc
 cxx = g++
+wasmcc = emcc
 
 coresrcdir = core
 coreobjdir = bin
@@ -28,9 +29,14 @@ rlimguiobj = $(patsubst $(rlimguisrcdir)/%.cpp,$(rlimguiobjdir)/%.o,$(rlimguisrc
 all: $(coreobj) $(imguiobj) $(rlimguiobj)
 	$(cxx) -o bin/editor $(editorinclude) $(editorflags) $(coreobj) $(imguiobj) $(rlimguiobj) editor.cpp lib/libraylib_linux.a $(editorlibs)
 
+# make this not dogshit later
+web: $(coreobj) $(imguiobj) $(rlimguiobj)
+	$(wasmcc) $(rlimguiflags) -s ASYNCIFY -s USE_GLFW=3 $(editorinclude) lib/libraylib_emcc.a editor.cpp $(coresrc) $(imguisrc) $(rlimguisrc) -lm -o bin/wasm/arm.html
+
 clean:
 	rm -f $(coreobjdir)/*.o || true
 	rm -f $(coreobjdir)/editor || true
+	rm -r $(coreobjdir)/wasm/* || true
 
 $(coreobjdir)/%.o: $(coresrcdir)/%.c
 	$(cc) -c  $< $(corelibs) -o $@ $(corecflags)
