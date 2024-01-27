@@ -1,5 +1,5 @@
 #define RL_CULL_DISTANCE_NEAR 0.01
-#define RL_CULL_DISTANCE_FAR 1000.0
+#define RL_CULL_DISTANCE_FAR  1000.0
 
 #include <stdio.h>
 #include <math.h>
@@ -11,22 +11,25 @@
 #include <rlImGui.h>
 
 #include "core/opw.h"
+#include "core/util.h"
+#include "core/intrpl.h"
+#include "core/eval.h"
 
-#define WINDOW_WIDTH 1280
+#define WINDOW_WIDTH  1280
 #define WINDOW_HEIGHT 720
 
 #define COL_PURPLE (Color){127, 131, 255, 255}
-#define COL_RED (Color){255, 74, 152, 255}
-#define COL_BLUE (Color){10, 250, 250, 255}
-#define COL_GRAY (Color){127, 127, 127, 255}
-#define COL_WHITE (Color){255, 255, 255, 255}
+#define COL_RED    (Color){255, 74,  152, 255}
+#define COL_BLUE   (Color){10,  250, 250, 255}
+#define COL_GRAY   (Color){127, 127, 127, 255}
+#define COL_WHITE  (Color){255, 255, 255, 255}
 
-#define CAMERA_MOVE_SPEED 0.09
-#define CAMERA_ROTATION_SPEED 0.03
-#define CAMERA_PAN_SPEED 0.2
-#define CAMERA_MOUSE_MOVE_SENSITIVITY 0.003
+#define CAMERA_MOVE_SPEED               0.09
+#define CAMERA_ROTATION_SPEED           0.03
+#define CAMERA_PAN_SPEED                0.2
+#define CAMERA_MOUSE_MOVE_SENSITIVITY   0.003
 #define CAMERA_MOUSE_SCROLL_SENSITIVITY 1.5
-#define CAMERA_ORBITAL_SPEED 0.5
+#define CAMERA_ORBITAL_SPEED            0.5
 
 void update_camera(Camera *camera, int disable_keys, int disable_mouse) {
 	Vector2 mouse_delta = GetMouseDelta();
@@ -45,16 +48,15 @@ void update_camera(Camera *camera, int disable_keys, int disable_mouse) {
 		if(IsKeyDown(KEY_SPACE)) { CameraMoveUp(camera, CAMERA_MOVE_SPEED); }
 		if(IsKeyDown(KEY_LEFT_CONTROL)) { CameraMoveUp(camera, -CAMERA_MOVE_SPEED); }
 		if(IsKeyPressed(KEY_KP_SUBTRACT)) { CameraMoveToTarget(camera, 2.0f); }
-		if(IsKeyPressed(KEY_KP_ADD)) { CameraMoveToTarget(camera, -2.0f); }
+		if(IsKeyPressed(KEY_KP_ADD))      { CameraMoveToTarget(camera, -2.0f); }
 	}
 	
 	if(!disable_mouse) {
 		if(IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-			const Vector2 mouseDelta = GetMouseDelta();
-			if(mouseDelta.x > 0.0f) { CameraMoveRight(camera, CAMERA_PAN_SPEED, 0); }
-			if(mouseDelta.x < 0.0f) { CameraMoveRight(camera, -CAMERA_PAN_SPEED, 0); }
-			if(mouseDelta.y > 0.0f) { CameraMoveUp(camera, -CAMERA_PAN_SPEED); }
-			if(mouseDelta.y < 0.0f) { CameraMoveUp(camera, CAMERA_PAN_SPEED); }
+			if(mouse_delta.x > 0.0f) { CameraMoveRight(camera, CAMERA_PAN_SPEED, 0); }
+			if(mouse_delta.x < 0.0f) { CameraMoveRight(camera, -CAMERA_PAN_SPEED, 0); }
+			if(mouse_delta.y > 0.0f) { CameraMoveUp(camera, -CAMERA_PAN_SPEED); }
+			if(mouse_delta.y < 0.0f) { CameraMoveUp(camera, CAMERA_PAN_SPEED); }
 		} else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
 			CameraYaw(camera, -mouse_delta.x*CAMERA_MOUSE_MOVE_SENSITIVITY, 0);
 			CameraPitch(camera, -mouse_delta.y*CAMERA_MOUSE_MOVE_SENSITIVITY, 0, 0, 0);
@@ -166,22 +168,28 @@ void draw_arm(kinstate_t* state, double* frames) {
 	return;
 }
 
-vec3_t position_function(double t) {
-	return (vec3_t){cos(3*t)+5, sin(3*t), 0.1*sin(27*t)};
+vec3_t position_function(ppoly_t ppoly, double t) {
+	return eval_ppoly3(&ppoly, t).p;
 }
 
 rotm_t orientation_function(double t) {
-	return opw_euler(0, M_PI + 0.1*M_PI*sin(3*t), 0.1*M_PI*cos(t));
+	return opw_euler(0, M_PI, 0);
 }
 
-void draw_path() {
-	for(int i = 0; i < 200; i++) {
-		double t0 = (i/200.0)*(1/3.0)*2*M_PI;
-		double t1 = ((i+1)/200.0)*(1/3.0)*2*M_PI;
-		vec3_t p0 = position_function(t0);
-		vec3_t p1 = position_function(t1);
-		DrawLine3D(from_vec3t(p0), from_vec3t(p1), COL_GRAY);
+void draw_path(ppoly_t ppoly) {
+	for(int i = 1; i < 200; i++) {
+		double t0 = range(0, 1, i-1, 200);
+		double t1 = range(0, 1, i, 200);
+		eval_t e0 = eval_ppoly3(&ppoly, t0);
+		eval_t e1 = eval_ppoly3(&ppoly, t1);
+		DrawLine3D(from_vec3t(e0.p), from_vec3t(e1.p), COL_GRAY);
 	}
+}
+
+void draw_gui() {
+	rlImGuiBegin();	
+	//ImGui::ShowDemoWindow();
+	rlImGuiEnd();
 }
 
 int main(void) {
@@ -206,14 +214,50 @@ int main(void) {
 
 	double t = 0;
 
+	/* testing */
+	vec3_t points[5];
+	points[0] = (vec3_t){4, 4, 1};
+	points[1] = (vec3_t){-4, 4, -1};
+	points[2] = (vec3_t){-4, -4, 1};
+	points[3] = (vec3_t){4, -4, 0};
+	points[4] = (vec3_t){5, -4, 1};
+	
+	vec3_t linear_mem0[EVAL_PPOLY1_MEMSIZE(5)];
+	double linear_mem1[5];
+	ppoly_t linear_ = eval_ppoly_init(linear_mem0, linear_mem1, 5);
+	intrpl_ppoly1(points, 5, &linear_);
+
+	vec3_t cubic_mem0[EVAL_PPOLY3_MEMSIZE(5)];
+	double cubic_mem1[5];
+	ppoly_t cubic_ = eval_ppoly_init(cubic_mem0, cubic_mem1, 5);
+	int pivot3_mem[EVAL_PPOLY3_PIVOT_MEMSIZE(5)];
+	double matrix3_mem[EVAL_PPOLY3_EQSYS_MEMSIZE(5)];
+	double b3_mem[EVAL_PPOLY3_B_MEMSIZE(5)];
+
+	luctx_t ctx3 = eval_ppoly_luctx_init(pivot3_mem, matrix3_mem, b3_mem);
+
+	int retval = intrpl_ppoly3(points, 5, NULL, NULL, &ctx3, &cubic_); 
+	
+	printf("pwp3 status: %d\n", retval);
+
+	/* testing */
+	
+	int sign = 1;
+
 	while(!WindowShouldClose()) {
-		t += 0.005;
+		t += sign*0.002;
+		if(t > 1.0) { t -= 0.002; sign *= -1; }
+		if(t < 0.0) { t += 0.002; sign *= -1; }
 
 		BeginDrawing();
 		ClearBackground(BLACK);
 		update_camera(&camera, io.WantCaptureKeyboard, io.WantCaptureMouse);
 		BeginMode3D(camera);
-
+		
+		for(int i = 0; i < 5; i++) {
+			DrawSphere(from_vec3t(points[i]), 0.1, COL_PURPLE);
+		}
+		
 		draw_axes();
 
 		KeyboardKey key = (KeyboardKey)GetKeyPressed();
@@ -230,9 +274,9 @@ int main(void) {
 		}
 
 		/* main logic */	
-		target_pos = position_function(t);
+		target_pos = position_function(cubic_, t);
 		target_rot = orientation_function(t);	
-		draw_path();	
+		draw_path(cubic_);
 		opw_inverse(arm, target_pos, target_rot, sols);	
 		opw_forward(state, frames);
 		opw_update_kinstate(&state, sols + 6*sol);
@@ -240,11 +284,8 @@ int main(void) {
 		/* main logic */
 
 		EndMode3D();
-			
-		rlImGuiBegin();	
-		bool open = true;
-		ImGui::ShowDemoWindow(&open);
-		rlImGuiEnd();
+		
+		draw_gui();
 
 		EndDrawing();
 	}

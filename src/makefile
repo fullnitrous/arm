@@ -26,7 +26,7 @@ rlimguisrc = $(wildcard $(rlimguisrcdir)/*.cpp)
 rlimguiobj = $(patsubst $(rlimguisrcdir)/%.cpp,$(rlimguiobjdir)/%.o,$(rlimguisrc))
 
 all: $(coreobj) $(imguiobj) $(rlimguiobj)
-	$(cxx) -o bin/editor $(editorinclude) $(editorflags) $(coreobj) $(imguiobj) $(rlimguiobj) main.c lib/libraylib_linux.a $(editorlibs)
+	$(cxx) -o bin/editor $(editorinclude) $(editorflags) $(coreobj) $(imguiobj) $(rlimguiobj) editor.cpp lib/libraylib_linux.a $(editorlibs)
 
 clean:
 	rm -f $(coreobjdir)/*.o || true
@@ -40,10 +40,6 @@ $(imguiobjdir)/%.o: $(imguisrcdir)/%.cpp
 
 $(rlimguiobjdir)/%.o: $(rlimguisrcdir)/%.cpp
 	$(cxx) $(rlimguiinclude) $(rlimguiflags) -c $< -o $@ 
-
-
-
-
 
 # old shit
 #g++ \
