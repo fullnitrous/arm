@@ -581,7 +581,7 @@ eval_t __eval_nurbs(void* f_, int k, double t) {
 		p[i].z   = v.z * v.w;
 		p[i].w   = v.w;
     }
-	
+
 	for(i = 0; i <= d-1; i++) {
 		tmp    = d / (u[i+k+1] - u[i+k-d+1]);
 		v[i].x = tmp*(p[i+1].x - p[i].x);

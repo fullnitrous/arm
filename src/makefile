@@ -10,7 +10,7 @@ corecflags = -Wall -ansi -pedantic
 coresrc = $(wildcard $(coresrcdir)/*.c)
 coreobj = $(patsubst $(coresrcdir)/%.c,$(coreobjdir)/%.o,$(coresrc))
 
-editorinclude = -I "raylib-5.0/src" -I "imgui-1.90.1" -I "rlimgui"
+editorinclude = -I "raylib-5.0/src" -I "imgui-1.90.1" -I "rlimgui" -I "core"
 editorflags = -std=c++11 -fpermissive -DNO_FONT_AWESOME
 editorlibs = -lGL -lm -pthread -ldl -lrt -lX11
 
@@ -26,20 +26,30 @@ rlimguiinclude = -I "raylib-5.0/src" -I "imgui-1.90.1"
 rlimguisrc = $(wildcard $(rlimguisrcdir)/*.cpp)
 rlimguiobj = $(patsubst $(rlimguisrcdir)/%.cpp,$(rlimguiobjdir)/%.o,$(rlimguisrc))
 
-all: $(coreobj) $(imguiobj) $(rlimguiobj)
-	$(cxx) -o bin/editor $(editorinclude) $(editorflags) $(coreobj) $(imguiobj) $(rlimguiobj) editor.cpp lib/libraylib_linux.a $(editorlibs)
+all: editor editor_web tests
+
+editor: $(coreobj) $(imguiobj) $(rlimguiobj)
+	$(cxx) -o editor/bin/editor $(editorinclude) $(editorflags) $(coreobj) $(imguiobj) $(rlimguiobj) editor/editor.cpp lib/libraylib_linux.a $(editorlibs)
+
+tests: $(coreobj)
+	$(cc) -o tests/trajectory/bin/tester $(editorinclude) $(coreobj) tests/trajectory/main.c -lm
 
 # make this not dogshit later
-web: $(coreobj) $(imguiobj) $(rlimguiobj)
-	$(wasmcc) $(rlimguiflags) -s ASYNCIFY -s USE_GLFW=3 $(editorinclude) lib/libraylib_emcc.a editor.cpp $(coresrc) $(imguisrc) $(rlimguisrc) -lm -o bin/wasm/arm.html
+editor_web: $(coreobj) $(imguiobj) $(rlimguiobj)
+	$(wasmcc) $(rlimguiflags) -s ASYNCIFY -s USE_GLFW=3 $(editorinclude) lib/libraylib_emcc.a editor/editor.cpp $(coresrc) $(imguisrc) $(rlimguisrc) -lm -o editor/bin/wasm/arm.html
 
 clean:
-	rm -f $(coreobjdir)/*.o || true
-	rm -f $(coreobjdir)/editor || true
-	rm -r $(coreobjdir)/wasm/* || true
+	rm -f bin/*.o || true
+	rm -f editor/bin/editor || true
+	rm -f editor/bin/*.o || true
+	rm -f editor/bin/wasm/arm.* || true
+	rm -f tests/trajectory/bin/tester || true
+	rm -f tests/trajectory/csv/*.csv || true
+	rm -f tests/trajectory/img/*.svg || true
+
 
 $(coreobjdir)/%.o: $(coresrcdir)/%.c
-	$(cc) -c  $< $(corelibs) -o $@ $(corecflags)
+	$(cc) -c $< $(corelibs) $(corecflags) -o $@
 
 $(imguiobjdir)/%.o: $(imguisrcdir)/%.cpp
 	$(cxx) -c $< -o $@ 

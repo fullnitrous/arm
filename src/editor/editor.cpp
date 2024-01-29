@@ -10,10 +10,10 @@
 #include <imgui.h>
 #include <rlImGui.h>
 
-#include "core/opw.h"
-#include "core/util.h"
-#include "core/intrpl.h"
-#include "core/eval.h"
+#include <opw.h>
+#include <util.h>
+#include <intrpl.h>
+#include <eval.h>
 
 #define WINDOW_WIDTH  1280
 #define WINDOW_HEIGHT 720
