@@ -8,7 +8,7 @@ refer to the posts I have made on my website (still ongoing).
 * [Spline Interpolation](https://fullnitrous.com/post/yyRW5)
 	* [Visualizer](https://fullnitrous.com/post/gvj8k)
 * [Forward Kinematics](https://fullnitrous.com/post/yKXjy)
-	* [Visualizer](https://fullnitrous.com/post/EeEyd)
+	* [Visualizer (foward and inverse)](https://fullnitrous.com/post/EeEyd)
 * [Inverse Kinematics](https://fullnitrous.com/post/qWlH6)
 
 ## Repository Structure
@@ -23,11 +23,11 @@ refer to the posts I have made on my website (still ongoing).
 * `src/lib`
 	* Statically linked libraries.
 * `src/makefile`
-	* Has targets: `all` for everything, `tests` `src/core`
+	* Has targets: `all` for everything, `tests` for `src/core`
 	unit testing, `editor` for the editor and `editor_web` for the
 	web version. Also `clean` for removing all generated files, includes
 	files that aren't compiled by the makefile as well.
-* `src/imgui-1.90.`, `raylib-5.0`, `rlimgui`
+* `src/imgui-1.90.`, `src/raylib-5.0`, `src/rlimgui`
 	* Dependencies (cloned repositories) for the editor.
 * `src/tests`
 	* Unit tests for `src/code`. Tests do not follow a specific C
