@@ -10,11 +10,11 @@ corecflags = -Wall -ansi -pedantic
 coresrc = $(wildcard $(coresrcdir)/*.c)
 coreobj = $(patsubst $(coresrcdir)/%.c,$(coreobjdir)/%.o,$(coresrc))
 
-editorinclude = -I "raylib-5.0/src" -I "imgui-1.90.1" -I "rlimgui" -I "core"
+editorinclude = -I "raylib-5.5/src" -I "imgui-1.91.8-docking" -I "rlimgui" -I "core"
 editorflags = -std=c++11 -fpermissive -DNO_FONT_AWESOME
 editorlibs = -lGL -lm -pthread -ldl -lrt -lX11
 
-imguisrcdir = imgui-1.90.1
+imguisrcdir = imgui-1.91.8-docking
 imguiobjdir = bin
 imguisrc = $(wildcard $(imguisrcdir)/*.cpp)
 imguiobj = $(patsubst $(imguisrcdir)/%.cpp,$(imguiobjdir)/%.o,$(imguisrc))
@@ -22,7 +22,7 @@ imguiobj = $(patsubst $(imguisrcdir)/%.cpp,$(imguiobjdir)/%.o,$(imguisrc))
 rlimguisrcdir = rlimgui
 rlimguiobjdir = bin
 rlimguiflags = -DNO_FONT_AWESOME
-rlimguiinclude = -I "raylib-5.0/src" -I "imgui-1.90.1"
+rlimguiinclude = -I "raylib-5.5/src" -I "imgui-1.91.8-docking"
 rlimguisrc = $(wildcard $(rlimguisrcdir)/*.cpp)
 rlimguiobj = $(patsubst $(rlimguisrcdir)/%.cpp,$(rlimguiobjdir)/%.o,$(rlimguisrc))
 
@@ -30,6 +30,9 @@ all: editor editor_web tests
 
 editor: $(coreobj) $(imguiobj) $(rlimguiobj)
 	$(cxx) -o editor/bin/editor $(editorinclude) $(editorflags) $(coreobj) $(imguiobj) $(rlimguiobj) editor/editor.cpp lib/libraylib_linux.a $(editorlibs)
+
+velocity_planning: $(coreobj)
+	$(cxx) -o tests/velocity_planning/bin/vp $(editorinclude) $(editorflags) $(coreobj) tests/velocity_planning/vp.c lib/libraylib_linux.a $(editorlibs)
 
 tests: $(coreobj)
 	$(cc) -o tests/trajectory/bin/tester $(editorinclude) $(coreobj) tests/trajectory/main.c -lm
@@ -68,7 +71,7 @@ $(rlimguiobjdir)/%.o: $(rlimguisrcdir)/%.cpp
 #	-framework Cocoa \
 #	-framework GLUT \
 #	-framework OpenGL \
-#	-I "src/raylib-5.0/src/" \
+#	-I "src/raylib-5.5/src/" \
 #	-I "src/imgui-1.90.1" \
 #	-I "src/rlimgui" \
 #	src/libraylib_macos.a \
