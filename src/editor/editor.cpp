@@ -15,8 +15,8 @@
 #include <intrpl.h>
 #include <eval.h>
 
-#define WINDOW_WIDTH  2880
-#define WINDOW_HEIGHT 1620
+#define WINDOW_WIDTH  1280
+#define WINDOW_HEIGHT 720
 
 #define COL_PURPLE (Color){127, 131, 255, 255}
 #define COL_RED    (Color){255, 74,  152, 255}
@@ -28,14 +28,14 @@
 
 #define CAMERA_MOVE_SPEED               0.09
 #define CAMERA_ROTATION_SPEED           0.03
-#define CAMERA_PAN_SPEED                0.2
+#define CAMERA_PAN_SPEED                0.1
 #define CAMERA_MOUSE_MOVE_SENSITIVITY   0.003
 #define CAMERA_MOUSE_SCROLL_SENSITIVITY 1.5
 #define CAMERA_ORBITAL_SPEED            0.5
 
-void update_camera(Camera *camera, int disable_keys, int disable_mouse) {
-	Vector2 mouse_delta = GetMouseDelta();
-	
+Vector3 update_camera(Camera *camera, int disable_keys, int disable_mouse) {
+	Vector2 mouse_delta = GetMouseDelta();	
+
 	if(!disable_keys) {
 		if(IsKeyDown(KEY_J)) { CameraPitch(camera, -CAMERA_ROTATION_SPEED, 0, 0, 0); }
 		if(IsKeyDown(KEY_K)) { CameraPitch(camera, CAMERA_ROTATION_SPEED, 0, 0, 0); }
@@ -52,21 +52,39 @@ void update_camera(Camera *camera, int disable_keys, int disable_mouse) {
 		if(IsKeyPressed(KEY_KP_SUBTRACT)) { CameraMoveToTarget(camera, 2.0f); }
 		if(IsKeyPressed(KEY_KP_ADD))      { CameraMoveToTarget(camera, -2.0f); }
 	}
-	
+
 	if(!disable_mouse) {
 		if(IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-			if(mouse_delta.x > 0.0f) { CameraMoveRight(camera, CAMERA_PAN_SPEED, 0); }
-			if(mouse_delta.x < 0.0f) { CameraMoveRight(camera, -CAMERA_PAN_SPEED, 0); }
-			if(mouse_delta.y > 0.0f) { CameraMoveUp(camera, -CAMERA_PAN_SPEED); }
-			if(mouse_delta.y < 0.0f) { CameraMoveUp(camera, CAMERA_PAN_SPEED); }
-		} else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
 			CameraYaw(camera, -mouse_delta.x*CAMERA_MOUSE_MOVE_SENSITIVITY, 0);
 			CameraPitch(camera, -mouse_delta.y*CAMERA_MOUSE_MOVE_SENSITIVITY, 0, 0, 0);
+		} else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+			// change this later to the correct value
+			float scale = 0.05;
+			Vector2 mp = GetMouseDelta();	
+			Vector3 forward = Vector3Normalize(Vector3Subtract(camera->target, camera->position));
+			Vector3 right = Vector3Normalize(Vector3CrossProduct(camera->up, forward));
+			Vector3 up = Vector3CrossProduct(forward, right);	
+			camera->position = Vector3Add(camera->position, Vector3Scale(right, scale*mp.x));
+			camera->position = Vector3Add(camera->position, Vector3Scale(up, scale*mp.y));
+			camera->target = Vector3Add(camera->target, Vector3Scale(right, scale*mp.x));
+			camera->target = Vector3Add(camera->target, Vector3Scale(up, scale*mp.y));
 		}
-		CameraMoveToTarget(camera, -GetMouseWheelMove());
+		
+		float scroll = GetMouseWheelMove();
+
+		printf("%d\n", GetKeyPressed());
+
+		if(fabs(scroll) >= 0.01) {
+			if(scroll > 0) {
+				camera->fovy += 0.5;
+			} else {
+				camera->fovy -= 0.5;
+			}
+		}
+
 	}
 	
-	return;
+	return (Vector3){0,0,0};
 }
 
 ImFont* font;
@@ -290,10 +308,16 @@ class SceneView : public Window {
 		void setup() override {
 			ViewTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 			
+			/*
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, ViewTexture);
+			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+			*/
+
 			camera.position   = (Vector3){10, 10, 10};
 			camera.target     = (Vector3){0, 0, 0};
 			camera.up         = (Vector3){0, 0, 1};
-			camera.projection = CAMERA_PERSPECTIVE;
+			camera.projection = CAMERA_ORTHOGRAPHIC;
 			camera.fovy       = 45.0;
 			
 			Image img = GenImageChecked(ScaleToDPII(256), ScaleToDPII(256), ScaleToDPII(32), ScaleToDPII(32), DARKGRAY, WHITE);
@@ -359,16 +383,32 @@ class SceneView : public Window {
 			BeginTextureMode(ViewTexture);
 			ClearBackground(COL_BG);
 			
-			update_camera(&camera, 0, 0);	
+			Vector3 pos = update_camera(&camera, !Focused, !Focused);
 			
+			/*
+			Vector2 mp = GetMousePosition();	
+			Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+			Vector3 right = Vector3Normalize(Vector3CrossProduct(camera.up, forward));
+			Vector3 up = Vector3CrossProduct(forward, right);
+			*/
+	
 			BeginMode3D(camera);
+			draw_axes();
 			
+			/*
+			DrawLine3D((Vector3){0, 0, 0}, Vector3Scale(right, 3), RED);
+			DrawLine3D((Vector3){0, 0, 0}, Vector3Scale(up, 3), GREEN);
+			Vector3 mp2world = Vector3Add(
+				Vector3Scale(right, mp.x*0.01),
+				Vector3Scale(up, mp.y*0.01)
+			);
+			DrawSphere(mp2world, 0.1, RED);
+			*/
+
 			for(int i = 0; i < 5; i++) {
 				DrawSphere(from_vec3t(points[i]), 0.1, COL_PURPLE);
 			}
-			
-			draw_axes();
-			
+				
 			KeyboardKey key = (KeyboardKey)GetKeyPressed();
 			switch(key) {
 				case KEY_ONE:   active = linear_; position_function = &position_function1; break;
@@ -386,7 +426,7 @@ class SceneView : public Window {
 			opw_update_kinstate(&state, sols + 6*sol);
 			draw_arm(linkages, &state, frames);						
 			// main logic
-			
+
 			EndMode3D();
 			EndTextureMode();
 		}
@@ -457,7 +497,7 @@ int main(void) {
 			ImGui::End();
 		}
 
-
+		
 		sv.update();
 		sv.show();
 
