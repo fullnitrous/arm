@@ -9,7 +9,7 @@ from decelerate import decelerate
 from accelerate import accelerate
 
 def v_lim(x):
-	#return [0.2 + 0.2*x, 0.2, 0]
+	return [0.2 + 0.2*x, 0.2, 0]
 	#return [0.2, 0, 0]
 	return [
 		0.2*math.sin(20*x) + 0.3*x + 0.14,
@@ -82,7 +82,6 @@ def minimas(v, n, dx):
 			mv.append(v[i])
 			lm = i
 	if len(mx) > 1:
-		print("hello")
 		mx[len(mx)-1] = (n-2)*dx + 0.5*dx
 	mx.append((n-1)*dx)
 	mv.append(0)
@@ -215,16 +214,68 @@ def backtrack(TARGETX, FUCKOFF, TARGETV, u, ops, opidx, v_min, v_max, a_max, j_m
 			opidx = push_op(u, ops, opidx, "dec", FUCKOFF, da0, dv0, da1, dv1, None, v_min)		
 			return opidx, (dv0, da0, dv1, da1)
 
-def algorithm(n, v, a_max, j_max, v_max):	
+def kiss(da1, i, n_max, dx, u, ops, opidx, v_min, v_max, a_max, j_max):
 	def constrained(_v, _a, _j):
 		cond0 = 1e-7 <= _v and _v <= v_max
 		cond1 = -a_max <= _a and _a <= a_max
 		cond2 = -j_max <= _j and _j <= j_max
 		return cond0 and cond1
 
-	n_max = int(v_max)
-	v_max = 2
+	if not constrained(*v_lim((i+1)*dx)):
+		return False, 0, 0	
 
+	for k in range(50):
+		isecx, bracketed = bracket_acc_isec(u, i, i+1, dx, opidx, ops, v_max, v_min, a_max, j_max, da1)
+
+		if bracketed == None:
+			return False, 0, 0
+	
+		#print(isecx)
+		#auxx[1] = [bracketed[0], bracketed[0], bracketed[1], bracketed[1]]
+		#auxy[1] = [0.3, -0.1, 0.3, -0.1]
+
+		opidx, (dv0, da0, dv1, da1) = backtrack(isecx, (i+1)*dx, v_lim(isecx)[0], u, ops, opidx, v_min, v_max, a_max, j_max)
+
+		_, _, da1, _ = _eval((i+1)*dx, u, ops, opidx, v_max, v_min, a_max, j_max)
+			
+		lv, la, lj = v_lim(isecx)
+		
+		v_diff = abs(lv-ops[opidx]["v1"])
+		a_diff = abs(la-ops[opidx]["a1"])	
+
+		if not (v_diff < 1e-7 and a_diff < 1e-7 and -j_max <= lj and lj <= j_max):
+			continue
+
+		#auxx[0] = [isecx, isecx]
+		#auxy[0] = [0.25, -0.1]
+		opidx, (dv0, da0, dv1, da1) = backtrack(isecx, isecx, v_lim(isecx)[0], u, ops, opidx, v_min, v_max, a_max, j_max)
+	
+		aa0, av0 = da1, dv1
+		i += 1	
+		i0 = i	
+		while i < n_max - 2:
+			lv, la, lj = v_lim((i+1)*dx)
+			
+			(_, u0, u1, u2), av1, _, _ = accelerate(dx, aa0, av0, v_max, a_max, j_max)
+			aa0, av0 = la, lv
+			
+			if av1 < lv and (u1 + i*dx <= (i+1)*dx):
+				break
+
+			if constrained(lv, la, lj):
+				lv1, la1 = lv, la
+				i += 1
+			else:
+				break
+
+		if i0 < i:
+			opidx = push_op(u, ops, opidx, "fol", i*dx, da1, dv1, la1, lv1, None, -1)		
+
+		return True, i, opidx
+
+	return False, 0, 0
+
+def algorithm(n, v, a_max, j_max, v_max):	
 	i      = 0
 	dx     = 1 / (n-1)
 	v[0]   = 0
@@ -239,7 +290,7 @@ def algorithm(n, v, a_max, j_max, v_max):
 	auxx = [[],[]]
 	auxy = [[],[]]
 	
-	while i < n_max - 1:
+	while i < n - 1:
 		v_min = min(mv[bsearch(mx, (i+1)*dx, len(mx))], v[i+1])
 
 		if ops[opidx]["op"] == "acc":
@@ -263,60 +314,23 @@ def algorithm(n, v, a_max, j_max, v_max):
 		tmp_u   = deepcopy(u)
 
 		opidx_tmp, (dv0, da0, dv1, da1) = backtrack((i+1)*dx, (i+1)*dx, v[i+1], tmp_u, tmp_ops, opidx, v_min, v_max, a_max, j_max)	
-		lv, la, lj = v_lim((i+1)*dx)
 	
 		tmp2_ops = deepcopy(tmp_ops)
 		tmp2_u = deepcopy(tmp_u)
 		tmp2_opidx = opidx_tmp
 
-		kissed = False
-
-		max_its = 50 if constrained(*v_lim((i+1)*dx)) else 0
-		
-		# create a function for this thing
-		for k in range(max_its):
-			isecx, bracketed = bracket_acc_isec(tmp2_u, i, i+1, dx, tmp2_opidx, tmp2_ops, v_max, v_min, a_max, j_max, da1)
-
-			if bracketed != None:
-				#print(isecx)
-				#auxx[1] = [bracketed[0], bracketed[0], bracketed[1], bracketed[1]]
-				#auxy[1] = [0.3, -0.1, 0.3, -0.1]
-
-				tmp2_opidx, (dv0, da0, dv1, da1) = backtrack(isecx, (i+1)*dx, v_lim(isecx)[0], tmp2_u, tmp2_ops, tmp2_opidx, v_min, v_max, a_max, j_max)
-
-				_, _, da1, _ = _eval((i+1)*dx, tmp2_u, tmp2_ops, tmp2_opidx, v_max, v_min, a_max, j_max)
-					
-				lv, la, lj = v_lim(isecx)
-				
-				v_diff = abs(lv-tmp2_ops[tmp2_opidx]["v1"])
-				a_diff = abs(la-tmp2_ops[tmp2_opidx]["a1"])
-				
-
-				if v_diff < 1e-7 and a_diff < 1e-7 and -j_max <= lj and lj <= j_max:
-					#auxx[0] = [isecx, isecx]
-					#auxy[0] = [0.25, -0.1]
-					opidx, (dv0, da0, dv1, da1) = backtrack(isecx, isecx, v_lim(isecx)[0], u, ops, opidx, v_min, v_max, a_max, j_max)
-					kissed = True
-					i += 1	
-					i0 = i	
-					while i < n_max - 2:
-						lv, la, lj = v_lim((i+1)*dx)
-						if constrained(lv, la, lj):
-							lv1, la1 = lv, la
-							i += 1
-						else:
-							break
-					if i0 < i:
-						opidx = push_op(u, ops, opidx, "fol", i*dx, da1, dv1, la1, lv1, None, -1)		
-					break
-			else:
-				break
-
+		kissed, _i, _opidx = kiss(da1, i, n, dx, tmp2_u, tmp2_ops, tmp2_opidx, v_min, v_max, a_max, j_max)
+	
 		if not kissed:
 			opidx = opidx_tmp
 			u = tmp_u
 			ops = tmp_ops	
 			i += 1
+		else:
+			opidx = _opidx
+			i = _i
+			u = tmp2_u
+			ops = tmp2_ops
 		
 
 	
@@ -408,7 +422,7 @@ if __name__  == "__main__":
 	limit1, = ax.plot(vlx, vldy, c="g", linestyle="--")
 	limit2, = ax.plot(vlx, vld2y, c="r", linestyle="--")
 
-	#ax.scatter(vlx, vly, c="k")
+	ax.scatter(vlx, vly, c="k")
 
 	fig.subplots_adjust(left=0.3, bottom=0.25)
 
@@ -436,7 +450,7 @@ if __name__  == "__main__":
 		ax=axv_max,
 		label="v_max",
 		valmin=0,
-		valmax=n,
+		valmax=2,
 		valinit=v_max,
 		orientation="vertical"
 	)
